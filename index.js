@@ -42,7 +42,7 @@ const upload = multer({ storage: storage });
 
 const mongoURI = 
 // "mongodb+srv://shravan:1234@cluster0.twakfwc.mongodb.net/formsData?retryWrites=true&w=majority&appName=Cluster0";
-"mongodb+srv://shravan:1234@cluster0.twakfwc.mongodb.net/ formsData?retryWrites=true&w=majority&appName=Cluster0"
+"mongodb+srv://shravan:1234@cluster0.twakfwc.mongodb.net/formsData?retryWrites=true&w=majority&appName=Cluster0"
 
 mongoose
   .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
