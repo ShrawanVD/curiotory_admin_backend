@@ -40,10 +40,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-const mongoURI =
-// "mongodb+srv://vaibhav:vaibhav86964@cluster0.fnunpdl.mongodb.net/formsData?retryWrites=true&w=majority&appName=Cluster0";
-"mongodb+srv://shravan:1234@cluster0.twakfwc.mongodb.net/formsData?retryWrites=true&w=majority&appName=Cluster0";
-  // "mongodb+srv://vaibhavkw2001:1234@cluster0.eqpfhck.mongodb.net/formsData?retryWrites=true&w=majority&appName=Cluster0";
+const mongoURI = "mongodb+srv://shravan:1234@cluster0.twakfwc.mongodb.net/formsData?retryWrites=true&w=majority&appName=Cluster0";
+
 mongoose
   .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
