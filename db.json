@@ -1,5 +1,30 @@
+
 {
     "teacher": [
+      {
+        "name": "Ilakshi Talwar",
+        "language": "French",
+        "proflevel": "B2",
+        "certificate": "",
+        "noStud": "600",
+        "experience": "6 Yrs",
+        "noHours": "10000",
+        "native": "Indian",
+        "ytvideo":"https://iframe.mediadelivery.net/embed/198197/d7d7479c-d83c-4545-a5df-d5ee82243243?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
+        "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1714043940/ilakshi_talwar_aaxk08.jpg"
+      },
+      {
+        "name": "Able Ange",
+        "language": "French",
+        "proflevel": "HSK-5",
+        "certificate": "",
+        "noStud": "550",
+        "experience": "5 Yrs",
+        "noHours": "8000",
+        "native": "Native",
+        "ytvideo":"https://iframe.mediadelivery.net/embed/198197/78244685-5de0-48fb-b5e5-c56396ef7874?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
+        "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1714043940/Able_ange_ngiear.jpg"
+      },
         {
             "name": "Anuj Jindal",
             "language": "French",
@@ -11,6 +36,29 @@
             "native": "Indian",
             "ytvideo":"https://www.youtube.com/embed/aXTwNIoym4U?si=mu7FTibURWNzx7Fl",
             "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1715061311/Anuj_-_French_k5hmtp.png"
+          },
+          {
+            "name": "Madame Rousseau",
+            "language": "French",
+            "proflevel": "HSK-5",
+            "certificate": "",
+            "noStud": "800",
+            "experience": "10 Yrs",
+            "noHours": "9500",
+            "native": "Native",
+            "ytvideo":"https://iframe.mediadelivery.net/embed/198197/1bd67206-3fbf-4ddd-b77f-82658d9a57d4?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
+            "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1715941934/frem_uyxxts.jpg"
+          }, {
+            "name": "Monsieur Dubois",
+            "language": "French",
+            "proflevel": "HSK-5",
+            "certificate": "",
+            "noStud": "500",
+            "experience": "7 Yrs",
+            "noHours": "7800",
+            "native": "Native",
+            "ytvideo":"https://iframe.mediadelivery.net/embed/198197/096afab6-4bfc-4dc4-a66c-290b4c0a38e2?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
+            "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1715941934/frenm_ocnoc7.jpg"
           },
           {
             "name": "Namya Madan",
@@ -25,6 +73,30 @@
             "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1715061328/Namy_-_spanish_y5elh0.png"
           },
           {
+            "name": "Carlos",
+            "language": "Spanish",
+            "proflevel": "C1",
+            "certificate": "",
+            "noStud": "400",
+            "experience": "8 Yrs",
+            "noHours": "6000",
+            "native": "Native",
+            "ytvideo":"https://iframe.mediadelivery.net/embed/198197/1ff7c74e-e633-4704-922e-2879f413c47a?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
+            "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1715941934/sanm_nki9tc.jpg"
+          },
+          {
+            "name": "Saumya Sharma",
+            "language": "Korean",
+            "proflevel": "Level 3",
+            "certificate": "",
+            "noStud": "800+",
+            "experience": "12 Yrs",
+            "noHours": "15000+",
+            "native": "Indian",
+            "ytvideo":"https://iframe.mediadelivery.net/embed/198197/69fe2b73-2c8b-43df-a778-b4b44941269e?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
+            "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1714043940/saumya_sharma_dpmdkm.jpg"
+          },
+          {
             "name": "Sarim Ahmed",
             "language": "Mandarin",
             "proflevel": "HSK-5",
@@ -36,8 +108,6 @@
             "ytvideo":"https://iframe.mediadelivery.net/embed/198197/069d6a63-ef2a-4ad2-b067-bf6b96491d5e?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
             "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1715061334/sarim_-_mandarin_zsay0s.png"
           },
-
-
           {
             "name": "Ishika Bhatia",
             "language": "German",
@@ -50,6 +120,31 @@
             "ytvideo":"https://iframe.mediadelivery.net/embed/198197/7df2a9f9-dbb4-4b4e-8f2b-e6874846f6b1?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
             "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1714043940/ishika_bhatia_cwycap.jpg"
           },
+          {
+            "name": "Juli",
+            "language": "German",
+            "proflevel": "C1",
+            "certificate": "",
+            "noStud": "400",
+            "experience": "3 Yrs",
+            "noHours": "6600",
+            "native": "Native",
+            "ytvideo":"https://iframe.mediadelivery.net/embed/198197/0573e173-bfb9-45b6-9126-17053dbf00b8?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
+            "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1715941934/gerfe_hewy0t.jpg"
+          },
+          {
+            "name": "Felix",
+            "language": "German",
+            "proflevel": "C1",
+            "certificate": "",
+            "noStud": "300",
+            "experience": "5 Yrs",
+            "noHours": "5500",
+            "native": "Native",
+            "ytvideo":"https://iframe.mediadelivery.net/embed/198197/5a8ffcc2-f1ba-4976-b6e6-eab905e11b26?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
+            "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1715941934/germ_ekeocg.jpg"
+          },
+
           {
             "name": "Khushbu Arora",
             "language": "English",
@@ -85,101 +180,6 @@
             "native": "Indian",
             "ytvideo":"https://iframe.mediadelivery.net/embed/198197/7d03c56e-3f53-4383-adf7-a791f0f2c717?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
             "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1714043963/heenaKumari1_xachec.jpg"
-          },
-          {
-            "name": "Ilakshi Talwar",
-            "language": "French",
-            "proflevel": "B2",
-            "certificate": "",
-            "noStud": "600",
-            "experience": "6 Yrs",
-            "noHours": "10000",
-            "native": "Indian",
-            "ytvideo":"https://iframe.mediadelivery.net/embed/198197/d7d7479c-d83c-4545-a5df-d5ee82243243?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
-            "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1714043940/ilakshi_talwar_aaxk08.jpg"
-          },
-          {
-            "name": "Saumya Sharma",
-            "language": "Korean",
-            "proflevel": "Level 3",
-            "certificate": "",
-            "noStud": "800+",
-            "experience": "12 Yrs",
-            "noHours": "15000+",
-            "native": "Indian",
-            "ytvideo":"https://iframe.mediadelivery.net/embed/198197/69fe2b73-2c8b-43df-a778-b4b44941269e?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
-            "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1714043940/saumya_sharma_dpmdkm.jpg"
-          },
-          {
-            "name": "Able Ange",
-            "language": "French",
-            "proflevel": "HSK-5",
-            "certificate": "",
-            "noStud": "550",
-            "experience": "5 Yrs",
-            "noHours": "8000",
-            "native": "Native",
-            "ytvideo":"https://iframe.mediadelivery.net/embed/198197/78244685-5de0-48fb-b5e5-c56396ef7874?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
-            "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1714043940/Able_ange_ngiear.jpg"
-          },
-          {
-            "name": "Juli",
-            "language": "German",
-            "proflevel": "C1",
-            "certificate": "",
-            "noStud": "400",
-            "experience": "3 Yrs",
-            "noHours": "6600",
-            "native": "Native",
-            "ytvideo":"https://iframe.mediadelivery.net/embed/198197/0573e173-bfb9-45b6-9126-17053dbf00b8?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
-            "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1715941934/gerfe_hewy0t.jpg"
-          },
-          {
-            "name": "Felix",
-            "language": "German",
-            "proflevel": "C1",
-            "certificate": "",
-            "noStud": "300",
-            "experience": "5 Yrs",
-            "noHours": "5500",
-            "native": "Native",
-            "ytvideo":"https://iframe.mediadelivery.net/embed/198197/5a8ffcc2-f1ba-4976-b6e6-eab905e11b26?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
-            "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1715941934/germ_ekeocg.jpg"
-          },
-          {
-            "name": "Madame Rousseau",
-            "language": "French",
-            "proflevel": "HSK-5",
-            "certificate": "",
-            "noStud": "800",
-            "experience": "10 Yrs",
-            "noHours": "9500",
-            "native": "Native",
-            "ytvideo":"https://iframe.mediadelivery.net/embed/198197/1bd67206-3fbf-4ddd-b77f-82658d9a57d4?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
-            "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1715941934/frem_uyxxts.jpg"
-          }, {
-            "name": "Monsieur Dubois",
-            "language": "French",
-            "proflevel": "HSK-5",
-            "certificate": "",
-            "noStud": "500",
-            "experience": "7 Yrs",
-            "noHours": "7800",
-            "native": "Native",
-            "ytvideo":"https://iframe.mediadelivery.net/embed/198197/096afab6-4bfc-4dc4-a66c-290b4c0a38e2?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
-            "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1715941934/frenm_ocnoc7.jpg"
-          },
-          {
-            "name": "Carlos",
-            "language": "Spanish",
-            "proflevel": "C1",
-            "certificate": "",
-            "noStud": "400",
-            "experience": "8 Yrs",
-            "noHours": "6000",
-            "native": "Native",
-            "ytvideo":"https://iframe.mediadelivery.net/embed/198197/1ff7c74e-e633-4704-922e-2879f413c47a?autoplay=true&loop=true&muted=false&preload=true&responsive=true",
-            "imgurl": "https://res.cloudinary.com/ddkfnfogy/image/upload/v1715941934/sanm_nki9tc.jpg"
           }
       ]
 }

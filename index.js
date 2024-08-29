@@ -165,49 +165,94 @@ app.get("/teachers", (req, res) => {
   });
 });
 
-// Endpoint to get all teachers
 app.get("/filterteachers", (req, res) => {
   fs.readFile(path.join(__dirname, "db.json"), "utf8", (err, data) => {
     if (err) {
       console.error("Error reading file:", err);
       res.status(500).send("Error reading data file");
-    }
-    // fs.readFile(path.join(__dirname, 'db.json'), 'utf8', (err, data) => {
-    //     if (err) {
-    //       console.error('Error reading file:', err);
-    //       res.status(500).send('Error reading data file');
-    //     } else {
-    //       res.json(JSON.parse(data));
-    //     }
+    } else {
+      try {
+        const jsonData = JSON.parse(data);
+        const { language, native, page = 1, limit = 10 } = req.query;
 
-    try {
-      // Parse the JSON data
-      const jsonData = JSON.parse(data);
+        // Filter teachers based on query parameters
+        let filteredTeachers = jsonData.teacher;
 
-      // Extract query parameters
-      const { language, native } = req.query;
+        if (language && language.toLowerCase() !== 'none') {
+          filteredTeachers = filteredTeachers.filter(
+            (teacher) => teacher.language.toLowerCase() === language.toLowerCase()
+          );
+        }
 
-      // Filter teachers based on query parameters
-      let filteredTeachers = jsonData.teacher;
-      if (language) {
-        filteredTeachers = filteredTeachers.filter(
-          (teacher) => teacher.language.toLowerCase() == language.toLowerCase()
-        );
+        if (native && native.toLowerCase() !== 'none') {
+          filteredTeachers = filteredTeachers.filter(
+            (teacher) => teacher.native.toLowerCase() === native.toLowerCase()
+          );
+        }
+
+        // Implement pagination
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + parseInt(limit);
+        const paginatedTeachers = filteredTeachers.slice(startIndex, endIndex);
+
+        res.json({
+          teachers: paginatedTeachers,
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(filteredTeachers.length / limit),
+        });
+      } catch (parseError) {
+        console.error("Error parsing JSON:", parseError);
+        res.status(500).send("Error parsing JSON data");
       }
-      if (native) {
-        filteredTeachers = filteredTeachers.filter(
-          (teacher) => teacher.native.toLowerCase() == native.toLowerCase()
-        );
-      }
-
-      // Send back the filtered teachers
-      res.json(filteredTeachers);
-    } catch (parseError) {
-      console.error("Error parsing JSON:", parseError);
-      res.status(500).send("Error parsing JSON data");
     }
   });
 });
+
+
+
+// Endpoint to get all teachers
+// app.get("/filterteachers", (req, res) => {
+//   fs.readFile(path.join(__dirname, "db.json"), "utf8", (err, data) => {
+//     if (err) {
+//       console.error("Error reading file:", err);
+//       res.status(500).send("Error reading data file");
+//     }
+//     // fs.readFile(path.join(__dirname, 'db.json'), 'utf8', (err, data) => {
+//     //     if (err) {
+//     //       console.error('Error reading file:', err);
+//     //       res.status(500).send('Error reading data file');
+//     //     } else {
+//     //       res.json(JSON.parse(data));
+//     //     }
+
+//     try {
+//       // Parse the JSON data
+//       const jsonData = JSON.parse(data);
+
+//       // Extract query parameters
+//       const { language, native } = req.query;
+
+//       // Filter teachers based on query parameters
+//       let filteredTeachers = jsonData.teacher;
+//       if (language) {
+//         filteredTeachers = filteredTeachers.filter(
+//           (teacher) => teacher.language.toLowerCase() == language.toLowerCase()
+//         );
+//       }
+//       if (native) {
+//         filteredTeachers = filteredTeachers.filter(
+//           (teacher) => teacher.native.toLowerCase() == native.toLowerCase()
+//         );
+//       }
+
+//       // Send back the filtered teachers
+//       res.json(filteredTeachers);
+//     } catch (parseError) {
+//       console.error("Error parsing JSON:", parseError);
+//       res.status(500).send("Error parsing JSON data");
+//     }
+//   });
+// });
 
 
 app.post("/api/blogs", async (req, res) => {
