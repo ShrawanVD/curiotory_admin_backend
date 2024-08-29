@@ -453,6 +453,7 @@ app.delete("/api/delete/blogs/:id", async (req, res) => {
 
 
 // post for contact
+// post for contact
 app.post("/sendMsg", async (req, res) => {
   const formData = req.body;
 
@@ -467,14 +468,37 @@ app.post("/sendMsg", async (req, res) => {
     const collection1 = db.collection("contactData");
 
     await collection1.insertOne(formData);
-    res.status(200).send("OK");
+    res.status(200).json({ message: "Form submitted successfully!" });
 
     await client.close();
   } catch (err) {
     console.error("Error:", err);
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+// app.post("/sendMsg", async (req, res) => {
+//   const formData = req.body;
+
+//   try {
+//     const client = new MongoClient(mongoURI, {
+//       useNewUrlParser: true,
+//       useUnifiedTopology: true,
+//     });
+//     await client.connect();
+
+//     const db = client.db("formsData");
+//     const collection1 = db.collection("contactData");
+
+//     await collection1.insertOne(formData);
+//     res.status(200).send("OK");
+
+//     await client.close();
+//   } catch (err) {
+//     console.error("Error:", err);
+//     res.status(500).send("Internal Server Error");
+//   }
+// });
 
 // app.post("/submit_form", upload.single('uploadPhoto'), async (req, res) => {
 
