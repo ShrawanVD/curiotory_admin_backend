@@ -152,8 +152,6 @@ function verifyToken(req, res, next) {
 }
 
 
-
-
 app.get("/teachers", (req, res) => {
   fs.readFile(path.join(__dirname, "db.json"), "utf8", (err, data) => {
     if (err) {
@@ -173,7 +171,7 @@ app.get("/filterteachers", (req, res) => {
     } else {
       try {
         const jsonData = JSON.parse(data);
-        const { language, native, page = 1, limit = 10 } = req.query;
+        const { language, native } = req.query;
 
         // Filter teachers based on query parameters
         let filteredTeachers = jsonData.teacher;
@@ -190,15 +188,8 @@ app.get("/filterteachers", (req, res) => {
           );
         }
 
-        // Implement pagination
-        const startIndex = (page - 1) * limit;
-        const endIndex = startIndex + parseInt(limit);
-        const paginatedTeachers = filteredTeachers.slice(startIndex, endIndex);
-
         res.json({
-          teachers: paginatedTeachers,
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(filteredTeachers.length / limit),
+          teachers: filteredTeachers,
         });
       } catch (parseError) {
         console.error("Error parsing JSON:", parseError);
@@ -207,6 +198,7 @@ app.get("/filterteachers", (req, res) => {
     }
   });
 });
+
 
 
 
@@ -453,7 +445,6 @@ app.delete("/api/delete/blogs/:id", async (req, res) => {
 
 
 // post for contact
-// post for contact
 app.post("/sendMsg", async (req, res) => {
   const formData = req.body;
 
@@ -476,74 +467,6 @@ app.post("/sendMsg", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
-// app.post("/sendMsg", async (req, res) => {
-//   const formData = req.body;
-
-//   try {
-//     const client = new MongoClient(mongoURI, {
-//       useNewUrlParser: true,
-//       useUnifiedTopology: true,
-//     });
-//     await client.connect();
-
-//     const db = client.db("formsData");
-//     const collection1 = db.collection("contactData");
-
-//     await collection1.insertOne(formData);
-//     res.status(200).send("OK");
-
-//     await client.close();
-//   } catch (err) {
-//     console.error("Error:", err);
-//     res.status(500).send("Internal Server Error");
-//   }
-// });
-
-// app.post("/submit_form", upload.single('uploadPhoto'), async (req, res) => {
-
-
-//   try {
-//     const formData = req.body;
-//     const file = req.file;
-
-//     if (!req.file) {
-//       return res.status(400).send('No file uploaded.');
-//   }
-  
-//     // Upload file to Cloudinary
-//     const cloudinaryUploadResult = await cloudinary.uploader.upload(
-//       file.path,
-//       { public_id: formData.firstName.replace(/ /g, '_') }
-//     );
-//     const imageUrl = cloudinaryUploadResult.url;
-  
-//     console.log("Image URL:", imageUrl);
-
-//     const client = new MongoClient(mongoURI, {
-//       useNewUrlParser: true,
-//       useUnifiedTopology: true,
-//     });
-
-//     await client.connect();
-//     const db = client.db("formsData");
-//     const collection = db.collection("teacherData");
-
-//     // Prepare data to be saved
-//     const dataToSave = {
-//       ...formData,
-//       uploadPhoto: imageUrl
-//     };
-
-//     await collection.insertOne(dataToSave);
-
-//     res.status(200).send("Form data submitted successfully!");
-//     await client.close();
-//   } catch (err) {
-//     console.error("Error:", err);
-//     res.status(500).send("Internal Server Error");
-//   }
-// });
 
 app.post("/submit_form", upload.fields([{ name: 'uploadPhoto', maxCount: 1 }, { name: 'uploadCV', maxCount: 1 }]), async (req, res) => {
   try {
@@ -603,6 +526,7 @@ app.post("/submit_form", upload.fields([{ name: 'uploadPhoto', maxCount: 1 }, { 
       res.status(500).send("Internal Server Error");
   }
 });
+
 
 // patch api for teachers for updating remarks
 app.patch('/api/teachers/:id', async (req, res) => {
