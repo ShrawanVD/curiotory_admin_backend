@@ -443,6 +443,31 @@ app.delete("/api/delete/blogs/:id", async (req, res) => {
 });
 
 
+// account-deletion
+app.post("/account", async (req, res) => {
+  const formData = req.body;
+
+  try {
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    await client.connect();
+
+    const db = client.db("formsData");
+    const collection1 = db.collection("accountDeletionRequests");
+
+    await collection1.insertOne(formData);
+    res.status(200).json({ message: "Account deletion request submitted successfully!" });
+
+    await client.close();
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+
 
 // post for contact
 app.post("/sendMsg", async (req, res) => {
