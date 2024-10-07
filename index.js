@@ -26,11 +26,19 @@ const users = require("./db.json");
 const blogs = require("./blogs.json");
 const { error } = require("console");
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+// app.use(bodyParser.urlencoded({ extended: true }));
+// app.use(bodyParser.json());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use(express.static("public"));
-app.use(cors());
+
 app.use(compression());
+
+app.use(cors());
+
+
+
 
 const storage = multer.diskStorage({
   filename: function (req, file, cb) {
@@ -247,31 +255,6 @@ app.get("/filterteachers", (req, res) => {
 // });
 
 
-app.post("/api/blogs", async (req, res) => {
-  const newBlog = req.body;
-  newBlog.date = getCurrentDate();
-  newBlog.views = 1;
-
-  try {
-    const client = new MongoClient(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    await client.connect();
-
-    const db = client.db("formsData");
-    const collection = db.collection("blogs");
-
-    await collection.insertOne(newBlog);
-    res.status(201).json(newBlog);
-
-    await client.close();
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).send("Internal Server Error");
-  }
-});
-
 function getCurrentDate() {
   const currentDate = new Date();
   const day = currentDate.getDate();
@@ -294,29 +277,39 @@ function getCurrentDate() {
   return `${day} ${month} ${year}`;
 }
 
+// fetch url title by ID
+app.get("/api/blogs/slug/:id", async (req, res) => {
+  const blogId = req.params.id;
 
-// GET route to retrieve all blogs
-// app.get("/api/blogs", async (req, res) => {
-//   try {
-//     const client = new MongoClient(mongoURI, {
-//       useNewUrlParser: true,
-//       useUnifiedTopology: true,
-//     });
-//     await client.connect();
+  try {
+    if (!ObjectId.isValid(blogId)) {
+      return res.status(400).json({ message: "Invalid blog ID" });
+    }
 
-//     const db = client.db("formsData");
-//     const collection = db.collection("blogs");
+    const client = new MongoClient(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
+    await client.connect();
 
-//     const blogs = await collection.find({}).toArray();
-//     res.json(blogs);
+    const db = client.db("formsData");
+    const collection = db.collection("blogs");
 
-//     await client.close();
-//   } catch (err) {
-//     console.error("Error:", err);
-//     res.status(500).send("Internal Server Error");
-//   }
-// });
+    const blogObjectId = new ObjectId(blogId);
+    const blog = await collection.findOne({ _id: blogObjectId }, { projection: { urlTitle: 1, _id: 0 } });
+
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    res.json(blog);
+    await client.close();
+  } catch (err) {
+    console.error("Error fetching blog slug:", err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+// for the website and admin dashboard
 app.get("/api/blogs", async (req, res) => {
+  console.log("in api blogs");
   try {
     const client = new MongoClient(mongoURI, {
       useNewUrlParser: true,
@@ -337,16 +330,27 @@ app.get("/api/blogs", async (req, res) => {
   }
 });
 
-// GET route to retrieve a single blog by ID
-app.get("/api/blogs/:id", async (req, res) => {
-  const blogId = req.params.id;
+// utility function for slugification
+function slugify(title) {
+  return title
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")       // Replace spaces with -
+    .replace(/[^\w\-]+/g, "")   // Remove all non-word characters
+    .replace(/\-\-+/g, "-");    // Replace multiple - with single -
+}
+
+// creating a new blog
+app.post("/api/blogs", async (req, res) => {
+  const newBlog = req.body;
+  newBlog.date = getCurrentDate();
+  newBlog.views = 1;
+
+  // slugify the urlTitle
+  newBlog.urlTitle = slugify(newBlog.urlTitle);
 
   try {
-    // Validate blogId as a valid ObjectId
-    if (!ObjectId.isValid(blogId)) {
-      return res.status(400).json({ message: "Invalid blog ID" });
-    }
-
     const client = new MongoClient(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -356,25 +360,45 @@ app.get("/api/blogs/:id", async (req, res) => {
     const db = client.db("formsData");
     const collection = db.collection("blogs");
 
-    // Convert blogId to ObjectId
-    const blogObjectId = new ObjectId(blogId);
+    await collection.insertOne(newBlog);
+    console.log("the url title after slugify is: " + newBlog.url);
+    res.status(201).json(newBlog);
 
+    await client.close();
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+
+// GET route to retrieve a single blog by ID
+app.get("/api/blogs/:id", async (req, res) => {
+  const blogId = req.params.id;  // Extract the 'id' from the route (ignore urlTitle)
+  console.log("Received request for blog ID:", req.params.id); // Check if ID is correct
+
+  try {
+    if (!ObjectId.isValid(blogId)) {
+      return res.status(400).json({ message: "Invalid blog ID" });
+    }
+
+    const client = new MongoClient(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
+    await client.connect();
+
+    const db = client.db("formsData");
+    const collection = db.collection("blogs");
+
+    const blogObjectId = new ObjectId(blogId);
     const blog = await collection.findOne({ _id: blogObjectId });
+
     if (!blog) {
-      // await client.close();
       return res.status(404).json({ message: "Blog not found" });
     }
 
     // Increment views count
-    const updatedBlog = await collection.findOneAndUpdate(
-      { _id: blogObjectId },
-      { $inc: { views: 1 } },
-      { returnDocument: 'after' } 
-    );
+    await collection.updateOne({ _id: blogObjectId }, { $inc: { views: 1 } });
 
-    // res.json(updatedBlog.value);
-    res.json(blog)
-
+    res.json(blog);
     await client.close();
   } catch (err) {
     console.error("Error:", err);
@@ -384,8 +408,13 @@ app.get("/api/blogs/:id", async (req, res) => {
 
 // PATCH route to update a blog by ID
 app.patch("/api/blogs/:id", async (req, res) => {
-  const blogId = req.params.id;  // Corrected to access req.params.id
-  const blogUpdates = req.body; 
+  const blogId = req.params.id;
+  const blogUpdates = req.body;
+
+  // Validate blogId as a valid ObjectId
+  if (!ObjectId.isValid(blogId) || blogId.length !== 24) {
+    return res.status(400).json({ message: "Invalid blog ID" });
+  }
 
   try {
     const client = new MongoClient(mongoURI, {
@@ -397,15 +426,20 @@ app.patch("/api/blogs/:id", async (req, res) => {
     const db = client.db("formsData");
     const collection = db.collection("blogs");
 
-    const updatedBlog = await collection.findOneAndUpdate(
-      { _id: new ObjectId(blogId) },  // Corrected to use ObjectId for _id
-      { $set: blogUpdates },
-      { returnDocument: 'after' }  // Use returnDocument instead of returnOriginal
-    );
+    // Check if blog exists first
+    const existingBlog = await collection.findOne({ _id: new ObjectId(blogId) });
 
-    if (!updatedBlog.value) {
+    if (!existingBlog) {
       return res.status(404).json({ message: "Blog not found" });
     }
+
+    // Proceed with update
+    const updatedBlog = await collection.findOneAndUpdate(
+      { _id: new ObjectId(blogId) },
+      { $set: blogUpdates },
+      { returnDocument: 'after' } // Use returnDocument instead of returnOriginal
+    );
+
     res.json(updatedBlog.value);
 
     await client.close();
@@ -415,9 +449,16 @@ app.patch("/api/blogs/:id", async (req, res) => {
   }
 });
 
+
+
 // DELETE route to delete a blog by ID
 app.delete("/api/delete/blogs/:id", async (req, res) => {
-  const blogId = req.params._id;
+  const blogId = req.params.id; // Corrected to access req.params.id
+
+  // Validate blogId as a valid ObjectId
+  if (!ObjectId.isValid(blogId) || blogId.length !== 24) {
+    return res.status(400).json({ message: "Invalid blog ID" });
+  }
 
   try {
     const client = new MongoClient(mongoURI, {
@@ -429,7 +470,7 @@ app.delete("/api/delete/blogs/:id", async (req, res) => {
     const db = client.db("formsData");
     const collection = db.collection("blogs");
 
-    const result = await collection.deleteOne({ id: blogId });
+    const result = await collection.deleteOne({ _id: new ObjectId(blogId) }); // Use ObjectId for _id
     if (result.deletedCount === 0) {
       return res.status(404).json({ message: "Blog not found" });
     }
@@ -441,6 +482,8 @@ app.delete("/api/delete/blogs/:id", async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
+
+
 
 
 // account-deletion
@@ -659,7 +702,7 @@ app.post("/guideForm", async (req, res) => {
   }
 });
 
-const port = process.env.PORT || 3000;
+const port = 3000;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
