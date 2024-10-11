@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const multer = require("multer");
-const { MongoClient, ObjectId } = require("mongodb");
+const { MongoClient, ObjectId, ListCollectionsCursor } = require("mongodb");
 const cors = require("cors");
 const { default: mongoose } = require("mongoose");
 const { v2: cloudinary } = require("cloudinary");
@@ -36,6 +36,9 @@ app.use(express.static("public"));
 app.use(compression());
 
 app.use(cors());
+
+
+
 
 
 
@@ -75,6 +78,16 @@ app.get("/msg", (req, res) => {
 });
 
 
+// port testing
+const port = 3000;
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
+
+
+
+
+// ------------------------------- sign up and login ----------------------------------------------------------
 
 // curiotory admin login api
 app.post("/register", async (req, res) => {
@@ -160,54 +173,9 @@ function verifyToken(req, res, next) {
 }
 
 
-app.get("/teachers", (req, res) => {
-  fs.readFile(path.join(__dirname, "db.json"), "utf8", (err, data) => {
-    if (err) {
-      console.error("Error reading file:", err);
-      res.status(500).send("Error reading data file");
-    } else {
-      res.json(JSON.parse(data));
-    }
-  });
-});
-
-app.get("/filterteachers", (req, res) => {
-  fs.readFile(path.join(__dirname, "db.json"), "utf8", (err, data) => {
-    if (err) {
-      console.error("Error reading file:", err);
-      res.status(500).send("Error reading data file");
-    } else {
-      try {
-        const jsonData = JSON.parse(data);
-        const { language, native } = req.query;
-
-        // Filter teachers based on query parameters
-        let filteredTeachers = jsonData.teacher;
-
-        if (language && language.toLowerCase() !== 'none') {
-          filteredTeachers = filteredTeachers.filter(
-            (teacher) => teacher.language.toLowerCase() === language.toLowerCase()
-          );
-        }
-
-        if (native && native.toLowerCase() !== 'none') {
-          filteredTeachers = filteredTeachers.filter(
-            (teacher) => teacher.native.toLowerCase() === native.toLowerCase()
-          );
-        }
-
-        res.json({
-          teachers: filteredTeachers,
-        });
-      } catch (parseError) {
-        console.error("Error parsing JSON:", parseError);
-        res.status(500).send("Error parsing JSON data");
-      }
-    }
-  });
-});
 
 
+// ------------------------------- blogs ----------------------------------------------------------
 
 
 // Endpoint to get all teachers
@@ -277,7 +245,7 @@ function getCurrentDate() {
   return `${day} ${month} ${year}`;
 }
 
-// fetch url title by ID
+// fetch url title by ID -> used for redirection from old to new urls
 app.get("/api/blogs/slug/:id", async (req, res) => {
   const blogId = req.params.id;
 
@@ -371,8 +339,7 @@ app.post("/api/blogs", async (req, res) => {
   }
 });
 
-
-// GET route to retrieve a single blog by ID
+// GET route to retrieve a single blog by ID -> used in the single blog
 app.get("/api/blogs/:id", async (req, res) => {
   const blogId = req.params.id;  // Extract the 'id' from the route (ignore urlTitle)
   console.log("Received request for blog ID:", req.params.id); // Check if ID is correct
@@ -450,7 +417,6 @@ app.patch("/api/blogs/:id", async (req, res) => {
 });
 
 
-
 // DELETE route to delete a blog by ID
 app.delete("/api/delete/blogs/:id", async (req, res) => {
   const blogId = req.params.id; // Corrected to access req.params.id
@@ -486,6 +452,224 @@ app.delete("/api/delete/blogs/:id", async (req, res) => {
 
 
 
+// ------------------------------- press release ----------------------------------------------------------
+
+//  POST a new press
+app.post("/api/press", async (req,res) => {
+
+  const newPress = req.body;
+  newPress.date = getCurrentDate();
+  
+  // slugify urlTitle
+  newPress.urlTitle = slugify(newPress.urlTitle);
+
+  try {
+    
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    await client.connect();
+
+    const db = client.db("formsData");
+    const collection = db.collection("Press Releases");
+
+    await collection.insertOne(newPress);
+    res.status(201).json(newPress);
+
+    await client.close();
+
+  } catch (err) {
+    console.error("Error: ",err);
+    res.status(500).send("Internal Server Error");
+  }
+
+})
+
+
+// GET all the press in descending order
+app.get("/api/press", async (req,res) => {
+
+  console.log("inside the get press function");
+  try {
+
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+
+    await client.connect();
+
+    const db = client.db("formsData");
+    const collection = db.collection("Press Releases")
+
+    // sort in descending order
+    const blogs = await collection.find({}).sort({
+      _id: -1
+    }).toArray();
+
+    res.json(blogs);
+
+    await client.close();
+    
+  } catch (error) {
+    console.error("Error: ",error);
+    res.status(500).send("Internal Server Error");
+  }
+})
+
+
+// GET press by id
+app.get("/api/press/:id", async (req,res) => {
+  const pressId = req.params.id;
+
+  try {
+
+    if(!ObjectId.isValid(pressId)){
+      return res.status(400).json({
+        message: "Invalid Press Id"
+      });
+    }
+
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    await client.connect();
+
+    const db = client.db("formsData");
+    const collection = db.collection("Press Releases")
+
+    const pressObjectId = new ObjectId(pressId);
+    const press = await collection.findOne({_id: pressObjectId});
+
+    if(!press){
+      return res.status(404).json({
+        message: "Press not found"
+      });
+    }
+
+    res.json(press);
+    await client.close();
+    
+  } catch (err) {
+    console.error("Error: ", err);
+    res.status(500).send("Internal Server Error");
+  }
+
+})
+
+
+
+// EDIT press
+app.patch("/api/press/:id", async (req,res) => {
+
+  console.log("inside the edit option");
+
+  const pressId = req.params.id;
+  const pressUpdate = req.body;
+
+  // validate pressId as a valid objectId
+  if(!ObjectId.isValid(pressId) || pressId.length !== 24){
+    return res.status(400).json({
+      message: "Invalid Press Id"
+    });
+  }
+
+
+  try {
+
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    await client.connect();
+
+    const db = client.db("formsData");
+    const collection = db.collection("Press Releases")
+
+    // check if existing press increase
+    const existingPress = await collection.findOne({
+      _id: new ObjectId(pressId)
+    });
+
+    if(!existingPress){
+      return res.status(404).json({
+        message: "Press not Found"
+      });
+    }
+
+    // Proceed with an update
+    const updatedPress = await collection.findOneAndUpdate(
+      {_id: new ObjectId(pressId)},
+      {$set: pressUpdate},
+      {returnDocument: 'after'} // use return document instead of returnOrg
+    );
+
+    res.json(updatedPress.value);
+
+    await client.close();
+    
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).send("Internal Server Error");
+  }
+
+
+})
+
+
+// Delete press
+app.delete("/api/delete/press/:id", async (req,res) => {
+  const pressId = req.params.id;
+
+  // Validate blogId as vaid ObjectId
+  if(!ObjectId.isValid(pressId) || pressId.length!= 24){
+    return res.status(400).json({
+      message: "Invalid Press Id"
+    });
+  }
+
+  try {
+
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    await client.connect();
+    
+    const db = client.db("formsData");
+    const collection = db.collection("Press Releases")
+
+    const result = await collection.deleteOne({
+      _id: new ObjectId(pressId)
+    });
+
+    if(result.deletedCount === 0){
+      return res.status(404).json({
+        message: "Press not found"
+      });
+    }
+
+    res.status(200).send("Ok");
+    await client.close();
+    
+  } catch (error) {
+    console.error("Error: ", error);
+    res.status(500).send("Internal Server Error");
+  }
+
+})
+
+
+
+// ------------------------------- website's forms ----------------------------------------------------------
+
+
+
 // account-deletion
 app.post("/account", async (req, res) => {
   const formData = req.body;
@@ -509,7 +693,6 @@ app.post("/account", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
 
 
 // post for contact
@@ -596,6 +779,62 @@ app.post("/submit_form", upload.fields([{ name: 'uploadPhoto', maxCount: 1 }, { 
 });
 
 
+
+
+// ------------------------------- teachers ----------------------------------------------------------
+
+
+// getting teachers - webite
+app.get("/teachers", (req, res) => {
+  fs.readFile(path.join(__dirname, "db.json"), "utf8", (err, data) => {
+    if (err) {
+      console.error("Error reading file:", err);
+      res.status(500).send("Error reading data file");
+    } else {
+      res.json(JSON.parse(data));
+    }
+  });
+});
+
+
+// filtering of teacher - website
+app.get("/filterteachers", (req, res) => {
+  fs.readFile(path.join(__dirname, "db.json"), "utf8", (err, data) => {
+    if (err) {
+      console.error("Error reading file:", err);
+      res.status(500).send("Error reading data file");
+    } else {
+      try {
+        const jsonData = JSON.parse(data);
+        const { language, native } = req.query;
+
+        // Filter teachers based on query parameters
+        let filteredTeachers = jsonData.teacher;
+
+        if (language && language.toLowerCase() !== 'none') {
+          filteredTeachers = filteredTeachers.filter(
+            (teacher) => teacher.language.toLowerCase() === language.toLowerCase()
+          );
+        }
+
+        if (native && native.toLowerCase() !== 'none') {
+          filteredTeachers = filteredTeachers.filter(
+            (teacher) => teacher.native.toLowerCase() === native.toLowerCase()
+          );
+        }
+
+        res.json({
+          teachers: filteredTeachers,
+        });
+      } catch (parseError) {
+        console.error("Error parsing JSON:", parseError);
+        res.status(500).send("Error parsing JSON data");
+      }
+    }
+  });
+});
+
+
 // patch api for teachers for updating remarks
 app.patch('/api/teachers/:id', async (req, res) => {
   const updates = req.body;
@@ -637,7 +876,7 @@ app.patch('/api/teachers/:id', async (req, res) => {
   }
 });
 
-// get all api for teachers data 
+// get all api for teachers data -> admin panel
 app.get('/api/teachers', async (req, res) => {
   const client = new MongoClient(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
 
@@ -702,10 +941,5 @@ app.post("/guideForm", async (req, res) => {
   }
 });
 
-const port = 3000;
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
 
 
-// ---------------------reduce the response time ------------------------
