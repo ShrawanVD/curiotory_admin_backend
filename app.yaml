@@ -1,0 +1,5 @@
+runtime: nodejs16 # Replace with your Node.js version
+env: standard # or flexible, depending on your setup
+handlers:
+  - url: /.*
+    script: auto
