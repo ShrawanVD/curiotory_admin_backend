@@ -85,6 +85,12 @@ app.listen(port, () => {
 });
 
 
+app.get('https:qurocity.ai/blogs/learn-multiple-languages-66cc673bb75ebff8f5a9529d', (req, res) => {
+  res.status(404).send('This page has been removed');
+});
+
+
+
 
 
 // ------------------------------- sign up and login ----------------------------------------------------------
