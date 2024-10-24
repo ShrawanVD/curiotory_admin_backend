@@ -85,12 +85,6 @@ app.listen(port, () => {
 });
 
 
-app.get('https:qurocity.ai/blogs/learn-multiple-languages-66cc673bb75ebff8f5a9529d', (req, res) => {
-  res.status(404).send('This page has been removed');
-});
-
-
-
 
 
 // ------------------------------- sign up and login ----------------------------------------------------------
@@ -184,51 +178,12 @@ function verifyToken(req, res, next) {
 // ------------------------------- blogs ----------------------------------------------------------
 
 
-// Endpoint to get all teachers
-// app.get("/filterteachers", (req, res) => {
-//   fs.readFile(path.join(__dirname, "db.json"), "utf8", (err, data) => {
-//     if (err) {
-//       console.error("Error reading file:", err);
-//       res.status(500).send("Error reading data file");
-//     }
-//     // fs.readFile(path.join(__dirname, 'db.json'), 'utf8', (err, data) => {
-//     //     if (err) {
-//     //       console.error('Error reading file:', err);
-//     //       res.status(500).send('Error reading data file');
-//     //     } else {
-//     //       res.json(JSON.parse(data));
-//     //     }
+// to assign 404 status code for this blog since it was deleted but still was getting indexed by google (issue has been resolved)
+app.get('https:qurocity.ai/blogs/learn-multiple-languages-66cc673bb75ebff8f5a9529d', (req, res) => {
+  res.status(404).send('This page has been removed');
+});
 
-//     try {
-//       // Parse the JSON data
-//       const jsonData = JSON.parse(data);
-
-//       // Extract query parameters
-//       const { language, native } = req.query;
-
-//       // Filter teachers based on query parameters
-//       let filteredTeachers = jsonData.teacher;
-//       if (language) {
-//         filteredTeachers = filteredTeachers.filter(
-//           (teacher) => teacher.language.toLowerCase() == language.toLowerCase()
-//         );
-//       }
-//       if (native) {
-//         filteredTeachers = filteredTeachers.filter(
-//           (teacher) => teacher.native.toLowerCase() == native.toLowerCase()
-//         );
-//       }
-
-//       // Send back the filtered teachers
-//       res.json(filteredTeachers);
-//     } catch (parseError) {
-//       console.error("Error parsing JSON:", parseError);
-//       res.status(500).send("Error parsing JSON data");
-//     }
-//   });
-// });
-
-
+// getting current date
 function getCurrentDate() {
   const currentDate = new Date();
   const day = currentDate.getDate();
@@ -566,8 +521,6 @@ app.get("/api/press/:id", async (req,res) => {
 
 })
 
-
-
 // EDIT press
 app.patch("/api/press/:id", async (req,res) => {
 
@@ -626,7 +579,6 @@ app.patch("/api/press/:id", async (req,res) => {
 
 })
 
-
 // Delete press
 app.delete("/api/delete/press/:id", async (req,res) => {
   const pressId = req.params.id;
@@ -669,120 +621,6 @@ app.delete("/api/delete/press/:id", async (req,res) => {
   }
 
 })
-
-
-
-// ------------------------------- website's forms ----------------------------------------------------------
-
-
-
-// account-deletion
-app.post("/account", async (req, res) => {
-  const formData = req.body;
-
-  try {
-    const client = new MongoClient(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    await client.connect();
-
-    const db = client.db("formsData");
-    const collection1 = db.collection("accountDeletionRequests");
-
-    await collection1.insertOne(formData);
-    res.status(200).json({ message: "Account deletion request submitted successfully!" });
-
-    await client.close();
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-});
-
-
-// post for contact
-app.post("/sendMsg", async (req, res) => {
-  const formData = req.body;
-
-  try {
-    const client = new MongoClient(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    await client.connect();
-
-    const db = client.db("formsData");
-    const collection1 = db.collection("contactData");
-
-    await collection1.insertOne(formData);
-    res.status(200).json({ message: "Form submitted successfully!" });
-
-    await client.close();
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-});
-
-app.post("/submit_form", upload.fields([{ name: 'uploadPhoto', maxCount: 1 }, { name: 'uploadCV', maxCount: 1 }]), async (req, res) => {
-  try {
-      const formData = req.body;
-      const files = req.files;
-      let imageUrl, cvUrl;
-
-      if (!files.uploadPhoto || !files.uploadCV) {
-          // return res.status(400).send('Both photo and CV files need to be uploaded.');
-      }
-
-      // Construct file base name using firstName and lastName
-      const baseName = `${formData.firstName}_${formData.lastName}`.replace(/ /g, '_');
-
-      // Upload photo to Cloudinary
-      if (files.uploadPhoto) {
-          const photo = files.uploadPhoto[0];
-          const cloudinaryUploadPhotoResult = await cloudinary.uploader.upload(
-              photo.path,
-              { public_id: `photo_${baseName}` }
-          );
-          imageUrl = cloudinaryUploadPhotoResult.url;
-      }
-
-      // Upload CV to Cloudinary
-      if (files.uploadCV) {
-          const cv = files.uploadCV[0];
-          const cloudinaryUploadCVResult = await cloudinary.uploader.upload(
-              cv.path,
-              { resource_type: 'raw', public_id: `cv_${baseName}` }
-          );
-          cvUrl = cloudinaryUploadCVResult.url;
-      }
-
-      const client = new MongoClient(mongoURI, {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
-      });
-
-      await client.connect();
-      const db = client.db("formsData");
-      const collection = db.collection("teacherData");
-
-      // Prepare data to be saved
-      const dataToSave = {
-          date: new Date(),
-          ...formData,
-          uploadPhoto: imageUrl,
-          uploadCV: cvUrl,
-          remarks: ""
-      };
-
-      await collection.insertOne(dataToSave);
-      res.status(200).send('OK');
-  } catch (err) {
-      console.error("Error:", err);
-      res.status(500).send("Internal Server Error");
-  }
-});
 
 
 
@@ -901,7 +739,120 @@ app.get('/api/teachers', async (req, res) => {
   }
 });
 
+app.post("/submit_form", upload.fields([{ name: 'uploadPhoto', maxCount: 1 }, { name: 'uploadCV', maxCount: 1 }]), async (req, res) => {
+  try {
+      const formData = req.body;
+      const files = req.files;
+      let imageUrl, cvUrl;
 
+      if (!files.uploadPhoto || !files.uploadCV) {
+          // return res.status(400).send('Both photo and CV files need to be uploaded.');
+      }
+
+      // Construct file base name using firstName and lastName
+      const baseName = `${formData.firstName}_${formData.lastName}`.replace(/ /g, '_');
+
+      // Upload photo to Cloudinary
+      if (files.uploadPhoto) {
+          const photo = files.uploadPhoto[0];
+          const cloudinaryUploadPhotoResult = await cloudinary.uploader.upload(
+              photo.path,
+              { public_id: `photo_${baseName}` }
+          );
+          imageUrl = cloudinaryUploadPhotoResult.url;
+      }
+
+      // Upload CV to Cloudinary
+      if (files.uploadCV) {
+          const cv = files.uploadCV[0];
+          const cloudinaryUploadCVResult = await cloudinary.uploader.upload(
+              cv.path,
+              { resource_type: 'raw', public_id: `cv_${baseName}` }
+          );
+          cvUrl = cloudinaryUploadCVResult.url;
+      }
+
+      const client = new MongoClient(mongoURI, {
+          useNewUrlParser: true,
+          useUnifiedTopology: true,
+      });
+
+      await client.connect();
+      const db = client.db("formsData");
+      const collection = db.collection("teacherData");
+
+      // Prepare data to be saved
+      const dataToSave = {
+          date: new Date(),
+          ...formData,
+          uploadPhoto: imageUrl,
+          uploadCV: cvUrl,
+          remarks: ""
+      };
+
+      await collection.insertOne(dataToSave);
+      res.status(200).send('OK');
+  } catch (err) {
+      console.error("Error:", err);
+      res.status(500).send("Internal Server Error");
+  }
+});
+
+
+
+// ------------------------------- website's forms ----------------------------------------------------------
+
+
+
+// account-deletion
+app.post("/account", async (req, res) => {
+  const formData = req.body;
+
+  try {
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    await client.connect();
+
+    const db = client.db("formsData");
+    const collection1 = db.collection("accountDeletionRequests");
+
+    await collection1.insertOne(formData);
+    res.status(200).json({ message: "Account deletion request submitted successfully!" });
+
+    await client.close();
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+// post for contact
+app.post("/sendMsg", async (req, res) => {
+  const formData = req.body;
+
+  try {
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    await client.connect();
+
+    const db = client.db("formsData");
+    const collection1 = db.collection("contactData");
+
+    await collection1.insertOne(formData);
+    res.status(200).json({ message: "Form submitted successfully!" });
+
+    await client.close();
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+// enrolling 
 app.post("/enroll", async (req, res) => {
   const formData = req.body;
 
@@ -924,6 +875,8 @@ app.post("/enroll", async (req, res) => {
   }
 });
 
+
+// guideform
 app.post("/guideForm", async (req, res) => {
   const formData = req.body;
 
