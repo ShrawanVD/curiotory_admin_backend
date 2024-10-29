@@ -627,7 +627,6 @@ app.delete("/api/delete/press/:id", async (req,res) => {
 
 // ------------------------------- teachers ----------------------------------------------------------
 
-
 // getting teachers - webite
 app.get("/teachers", (req, res) => {
   fs.readFile(path.join(__dirname, "db.json"), "utf8", (err, data) => {
@@ -639,7 +638,6 @@ app.get("/teachers", (req, res) => {
     }
   });
 });
-
 
 // filtering of teacher - website
 app.get("/filterteachers", (req, res) => {
@@ -677,7 +675,6 @@ app.get("/filterteachers", (req, res) => {
     }
   });
 });
-
 
 // patch api for teachers for updating remarks
 app.patch('/api/teachers/:id', async (req, res) => {
@@ -800,10 +797,74 @@ app.post("/submit_form", upload.fields([{ name: 'uploadPhoto', maxCount: 1 }, { 
 
 
 
+
+// ------------------------------- marketing leads ----------------------------------------------------------
+
+// Counseling form submission -> present on the website
+app.post("/counseling", async (req, res) => {
+  const formData = req.body;
+
+  try {
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    await client.connect();
+
+    const db = client.db("formsData");
+    const marketingCollection = db.collection("MarketingLeads");
+
+    // Function to format date
+    const formatDate = (date) => {
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).format(date).replace(",", "").replace(":", ".");
+    };
+
+    // Check if an entry already exists for this email
+    const existingUser = await marketingCollection.findOne({ email: formData.email });
+
+    if (existingUser) {
+      // Scenario 1: Same Email Used
+      await marketingCollection.updateOne(
+        { email: formData.email },
+        {
+          $set: {
+            name: formData.name || existingUser.name,
+            contactNumber: formData.contactNumber || existingUser.contactNumber,
+            language: formData.language || existingUser.language,
+            category: "counseling",
+            updatedAt: formatDate(new Date()), // Format updatedAt
+          },
+        }
+      );
+      res.status(200).json({ message: "Enquiry Submitted!" });
+    } else {
+      // Scenario 2: Different Email Used or new entry
+      await marketingCollection.insertOne({
+        ...formData,
+        category: "counseling",
+        createdAt: formatDate(new Date()), // Format createdAt
+      });
+      res.status(200).json({ message: "Enquiry Submitted!" });
+    }
+
+    await client.close();
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+
+
+
 // ------------------------------- website's forms ----------------------------------------------------------
-
-
-
 // account-deletion
 app.post("/account", async (req, res) => {
   const formData = req.body;
