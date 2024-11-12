@@ -10,8 +10,10 @@ const compression = require("compression");
 const jwt = require("jsonwebtoken");
 const Schema = mongoose.Schema;
 const secretKey = "secretKey";
-// const bcrypt= "bcrypt";
 const bcrypt = require("bcryptjs");
+const { v4: uuidv4 } = require("uuid");
+
+const nodemailer = require("nodemailer");
 
 cloudinary.config({
   cloud_name: "ddkfnfogy",
@@ -37,23 +39,17 @@ app.use(compression());
 
 app.use(cors());
 
-
-
-
-
-
-
 const storage = multer.diskStorage({
   filename: function (req, file, cb) {
-      cb(null, Date.now() + '-' + file.originalname)
-  }
+    cb(null, Date.now() + "-" + file.originalname);
+  },
 });
 
 const upload = multer({ storage: storage });
 
-const mongoURI = 
-// "mongodb+srv://shravan:1234@cluster0.twakfwc.mongodb.net/formsData?retryWrites=true&w=majority&appName=Cluster0";
-"mongodb+srv://shravan:1234@cluster0.twakfwc.mongodb.net/formsData?retryWrites=true&w=majority&appName=Cluster0"
+const mongoURI =
+  // "mongodb+srv://shravan:1234@cluster0.twakfwc.mongodb.net/formsData?retryWrites=true&w=majority&appName=Cluster0";
+  "mongodb+srv://shravan:1234@cluster0.twakfwc.mongodb.net/formsData?retryWrites=true&w=majority&appName=Cluster0";
 
 mongoose
   .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -66,7 +62,7 @@ mongoose
 const userSchema = new mongoose.Schema({
   username: String,
   password: String, // Store hashed passwords (not applied till now)
-  role: String
+  role: String,
 });
 
 const User = mongoose.model("admin", userSchema);
@@ -77,15 +73,11 @@ app.get("/msg", (req, res) => {
   });
 });
 
-
 // port testing
 const port = 3000;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
-
-
-
 
 // ------------------------------- sign up and login ----------------------------------------------------------
 
@@ -103,8 +95,8 @@ app.post("/register", async (req, res) => {
 
   const newUser = new User({
     username,
-    password : hashedPassword, 
-    role
+    password: hashedPassword,
+    role,
   });
 
   await newUser.save();
@@ -114,10 +106,10 @@ app.post("/register", async (req, res) => {
 // Authenticate user function
 const authenticateUser = async (username, password) => {
   const user = await User.findOne({ username });
-  if (user && await bcrypt.compare(password, user.password)) {
+  if (user && (await bcrypt.compare(password, user.password))) {
     return user;
   }
-  return null;  
+  return null;
 };
 
 // taking login details
@@ -172,16 +164,45 @@ function verifyToken(req, res, next) {
   }
 }
 
-
-
-
 // ------------------------------- blogs ----------------------------------------------------------
 
-
 // to assign 404 status code for this blog since it was deleted but still was getting indexed by google (issue has been resolved)
-app.get('https:qurocity.ai/blogs/learn-multiple-languages-66cc673bb75ebff8f5a9529d', (req, res) => {
-  res.status(404).send('This page has been removed');
+app.get(
+  "https:qurocity.ai/blogs/learn-multiple-languages-66cc673bb75ebff8f5a9529d",
+  (req, res) => {
+    res.status(404).send("This page has been removed");
+  }
+);
+
+// redirecting to 301 error for urls having multiple id's in url -> seo issue
+app.get("/blogs/:slug", async (req, res) => {
+  const slug = req.params.slug;
+
+  // Check if the slug contains duplicate segments (e.g., '-<id>-<id>')
+  const slugParts = slug.split('-');
+  const lastPart = slugParts[slugParts.length - 1];
+
+  if (slugParts[slugParts.length - 2] === lastPart) {
+    // Redirect to the correct URL without the duplicate part
+    const correctSlug = slugParts.slice(0, slugParts.length - 1).join('-');
+    // Set the old URL (with duplicate IDs) to return a 404 Not Found
+    return res.status(404).send("Blog not found at this URL. Redirecting...");
+  }
+
+  // Proceed to fetch and display the blog using the clean slug
+  try {
+    const blog = await collection.findOne({ urlTitle: slug });
+    if (!blog) {
+      return res.status(404).send("Blog not found");
+    }
+    res.json(blog);
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).send("Internal Server Error");
+  }
 });
+
+
 
 // getting current date
 function getCurrentDate() {
@@ -215,14 +236,20 @@ app.get("/api/blogs/slug/:id", async (req, res) => {
       return res.status(400).json({ message: "Invalid blog ID" });
     }
 
-    const client = new MongoClient(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
     await client.connect();
 
     const db = client.db("formsData");
     const collection = db.collection("blogs");
 
     const blogObjectId = new ObjectId(blogId);
-    const blog = await collection.findOne({ _id: blogObjectId }, { projection: { urlTitle: 1, _id: 0 } });
+    const blog = await collection.findOne(
+      { _id: blogObjectId },
+      { projection: { urlTitle: 1, _id: 0 } }
+    );
 
     if (!blog) {
       return res.status(404).json({ message: "Blog not found" });
@@ -265,9 +292,9 @@ function slugify(title) {
     .toString()
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, "-")       // Replace spaces with -
-    .replace(/[^\w\-]+/g, "")   // Remove all non-word characters
-    .replace(/\-\-+/g, "-");    // Replace multiple - with single -
+    .replace(/\s+/g, "-") // Replace spaces with -
+    .replace(/[^\w\-]+/g, "") // Remove all non-word characters
+    .replace(/\-\-+/g, "-"); // Replace multiple - with single -
 }
 
 // creating a new blog
@@ -302,7 +329,7 @@ app.post("/api/blogs", async (req, res) => {
 
 // GET route to retrieve a single blog by ID -> used in the single blog
 app.get("/api/blogs/:id", async (req, res) => {
-  const blogId = req.params.id;  // Extract the 'id' from the route (ignore urlTitle)
+  const blogId = req.params.id; // Extract the 'id' from the route (ignore urlTitle)
   console.log("Received request for blog ID:", req.params.id); // Check if ID is correct
 
   try {
@@ -310,7 +337,10 @@ app.get("/api/blogs/:id", async (req, res) => {
       return res.status(400).json({ message: "Invalid blog ID" });
     }
 
-    const client = new MongoClient(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
     await client.connect();
 
     const db = client.db("formsData");
@@ -355,7 +385,9 @@ app.patch("/api/blogs/:id", async (req, res) => {
     const collection = db.collection("blogs");
 
     // Check if blog exists first
-    const existingBlog = await collection.findOne({ _id: new ObjectId(blogId) });
+    const existingBlog = await collection.findOne({
+      _id: new ObjectId(blogId),
+    });
 
     if (!existingBlog) {
       return res.status(404).json({ message: "Blog not found" });
@@ -365,7 +397,7 @@ app.patch("/api/blogs/:id", async (req, res) => {
     const updatedBlog = await collection.findOneAndUpdate(
       { _id: new ObjectId(blogId) },
       { $set: blogUpdates },
-      { returnDocument: 'after' } // Use returnDocument instead of returnOriginal
+      { returnDocument: "after" } // Use returnDocument instead of returnOriginal
     );
 
     res.json(updatedBlog.value);
@@ -376,7 +408,6 @@ app.patch("/api/blogs/:id", async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
-
 
 // DELETE route to delete a blog by ID
 app.delete("/api/delete/blogs/:id", async (req, res) => {
@@ -410,22 +441,17 @@ app.delete("/api/delete/blogs/:id", async (req, res) => {
   }
 });
 
-
-
-
 // ------------------------------- press release ----------------------------------------------------------
 
 //  POST a new press
-app.post("/api/press", async (req,res) => {
-
+app.post("/api/press", async (req, res) => {
   const newPress = req.body;
   newPress.date = getCurrentDate();
-  
+
   // slugify urlTitle
   newPress.urlTitle = slugify(newPress.urlTitle);
 
   try {
-    
     const client = new MongoClient(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -439,56 +465,51 @@ app.post("/api/press", async (req,res) => {
     res.status(201).json(newPress);
 
     await client.close();
-
   } catch (err) {
-    console.error("Error: ",err);
+    console.error("Error: ", err);
     res.status(500).send("Internal Server Error");
   }
-
-})
-
+});
 
 // GET all the press in descending order
-app.get("/api/press", async (req,res) => {
-
+app.get("/api/press", async (req, res) => {
   console.log("inside the get press function");
   try {
-
     const client = new MongoClient(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-    })
+    });
 
     await client.connect();
 
     const db = client.db("formsData");
-    const collection = db.collection("Press Releases")
+    const collection = db.collection("Press Releases");
 
     // sort in descending order
-    const blogs = await collection.find({}).sort({
-      _id: -1
-    }).toArray();
+    const blogs = await collection
+      .find({})
+      .sort({
+        _id: -1,
+      })
+      .toArray();
 
     res.json(blogs);
 
     await client.close();
-    
   } catch (error) {
-    console.error("Error: ",error);
+    console.error("Error: ", error);
     res.status(500).send("Internal Server Error");
   }
-})
-
+});
 
 // GET press by id
-app.get("/api/press/:id", async (req,res) => {
+app.get("/api/press/:id", async (req, res) => {
   const pressId = req.params.id;
 
   try {
-
-    if(!ObjectId.isValid(pressId)){
+    if (!ObjectId.isValid(pressId)) {
       return res.status(400).json({
-        message: "Invalid Press Id"
+        message: "Invalid Press Id",
       });
     }
 
@@ -500,45 +521,40 @@ app.get("/api/press/:id", async (req,res) => {
     await client.connect();
 
     const db = client.db("formsData");
-    const collection = db.collection("Press Releases")
+    const collection = db.collection("Press Releases");
 
     const pressObjectId = new ObjectId(pressId);
-    const press = await collection.findOne({_id: pressObjectId});
+    const press = await collection.findOne({ _id: pressObjectId });
 
-    if(!press){
+    if (!press) {
       return res.status(404).json({
-        message: "Press not found"
+        message: "Press not found",
       });
     }
 
     res.json(press);
     await client.close();
-    
   } catch (err) {
     console.error("Error: ", err);
     res.status(500).send("Internal Server Error");
   }
-
-})
+});
 
 // EDIT press
-app.patch("/api/press/:id", async (req,res) => {
-
+app.patch("/api/press/:id", async (req, res) => {
   console.log("inside the edit option");
 
   const pressId = req.params.id;
   const pressUpdate = req.body;
 
   // validate pressId as a valid objectId
-  if(!ObjectId.isValid(pressId) || pressId.length !== 24){
+  if (!ObjectId.isValid(pressId) || pressId.length !== 24) {
     return res.status(400).json({
-      message: "Invalid Press Id"
+      message: "Invalid Press Id",
     });
   }
 
-
   try {
-
     const client = new MongoClient(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -547,83 +563,74 @@ app.patch("/api/press/:id", async (req,res) => {
     await client.connect();
 
     const db = client.db("formsData");
-    const collection = db.collection("Press Releases")
+    const collection = db.collection("Press Releases");
 
     // check if existing press increase
     const existingPress = await collection.findOne({
-      _id: new ObjectId(pressId)
+      _id: new ObjectId(pressId),
     });
 
-    if(!existingPress){
+    if (!existingPress) {
       return res.status(404).json({
-        message: "Press not Found"
+        message: "Press not Found",
       });
     }
 
     // Proceed with an update
     const updatedPress = await collection.findOneAndUpdate(
-      {_id: new ObjectId(pressId)},
-      {$set: pressUpdate},
-      {returnDocument: 'after'} // use return document instead of returnOrg
+      { _id: new ObjectId(pressId) },
+      { $set: pressUpdate },
+      { returnDocument: "after" } // use return document instead of returnOrg
     );
 
     res.json(updatedPress.value);
 
     await client.close();
-    
   } catch (error) {
     console.error("Error:", error);
     res.status(500).send("Internal Server Error");
   }
-
-
-})
+});
 
 // Delete press
-app.delete("/api/delete/press/:id", async (req,res) => {
+app.delete("/api/delete/press/:id", async (req, res) => {
   const pressId = req.params.id;
 
   // Validate blogId as vaid ObjectId
-  if(!ObjectId.isValid(pressId) || pressId.length!= 24){
+  if (!ObjectId.isValid(pressId) || pressId.length != 24) {
     return res.status(400).json({
-      message: "Invalid Press Id"
+      message: "Invalid Press Id",
     });
   }
 
   try {
-
     const client = new MongoClient(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
 
     await client.connect();
-    
+
     const db = client.db("formsData");
-    const collection = db.collection("Press Releases")
+    const collection = db.collection("Press Releases");
 
     const result = await collection.deleteOne({
-      _id: new ObjectId(pressId)
+      _id: new ObjectId(pressId),
     });
 
-    if(result.deletedCount === 0){
+    if (result.deletedCount === 0) {
       return res.status(404).json({
-        message: "Press not found"
+        message: "Press not found",
       });
     }
 
     res.status(200).send("Ok");
     await client.close();
-    
   } catch (error) {
     console.error("Error: ", error);
     res.status(500).send("Internal Server Error");
   }
-
-})
-
-
-
+});
 
 // ------------------------------- teachers ----------------------------------------------------------
 
@@ -653,13 +660,14 @@ app.get("/filterteachers", (req, res) => {
         // Filter teachers based on query parameters
         let filteredTeachers = jsonData.teacher;
 
-        if (language && language.toLowerCase() !== 'none') {
+        if (language && language.toLowerCase() !== "none") {
           filteredTeachers = filteredTeachers.filter(
-            (teacher) => teacher.language.toLowerCase() === language.toLowerCase()
+            (teacher) =>
+              teacher.language.toLowerCase() === language.toLowerCase()
           );
         }
 
-        if (native && native.toLowerCase() !== 'none') {
+        if (native && native.toLowerCase() !== "none") {
           filteredTeachers = filteredTeachers.filter(
             (teacher) => teacher.native.toLowerCase() === native.toLowerCase()
           );
@@ -677,101 +685,117 @@ app.get("/filterteachers", (req, res) => {
 });
 
 // patch api for teachers for updating remarks
-app.patch('/api/teachers/:id', async (req, res) => {
+app.patch("/api/teachers/:id", async (req, res) => {
   const updates = req.body;
   const id = req.params.id;
 
   // Check if the provided ID is valid
   if (!ObjectId.isValid(id)) {
-      return res.status(400).json({ error: 'Invalid ID format' });
+    return res.status(400).json({ error: "Invalid ID format" });
   }
 
   try {
-      const client = new MongoClient(mongoURI, {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
-      });
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
 
-      await client.connect();
-      const db = client.db("formsData");
-      const collection = db.collection("teacherData");
+    await client.connect();
+    const db = client.db("formsData");
+    const collection = db.collection("teacherData");
 
-      // Instantiate ObjectId with `new` when using it to construct query
-      const result = await collection.updateOne(
-          { _id: new ObjectId(id) }, // Correct usage of ObjectId with 'new'
-          { $set: updates }
-      );
+    // Instantiate ObjectId with `new` when using it to construct query
+    const result = await collection.updateOne(
+      { _id: new ObjectId(id) }, // Correct usage of ObjectId with 'new'
+      { $set: updates }
+    );
 
-      if (result.matchedCount === 0) {
-          return res.status(404).json({ error: 'No matching document found' });
-      }
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "No matching document found" });
+    }
 
-      if (result.modifiedCount === 0) {
-          return res.status(200).json({ message: 'No changes made', details: result });
-      }
+    if (result.modifiedCount === 0) {
+      return res
+        .status(200)
+        .json({ message: "No changes made", details: result });
+    }
 
-      res.status(200).json({ message: 'Update successful', details: result });
+    res.status(200).json({ message: "Update successful", details: result });
   } catch (err) {
-      console.error("Database update error:", err);
-      res.status(500).json({ error: 'Could not update the data', details: err.message });
+    console.error("Database update error:", err);
+    res
+      .status(500)
+      .json({ error: "Could not update the data", details: err.message });
   }
 });
 
 // get all api for teachers data -> admin panel
-app.get('/api/teachers', async (req, res) => {
-  const client = new MongoClient(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
+app.get("/api/teachers", async (req, res) => {
+  const client = new MongoClient(mongoURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
 
   try {
-      await client.connect();
-      const db = client.db('formsData'); 
-      const collection = db.collection('teacherData'); 
+    await client.connect();
+    const db = client.db("formsData");
+    const collection = db.collection("teacherData");
 
-      const teachers = await collection.find({}).toArray(); // Fetch all blog documents
-      res.json(teachers);
+    const teachers = await collection.find({}).toArray(); // Fetch all blog documents
+    res.json(teachers);
   } catch (err) {
-      console.error('Error:', err);
-      res.status(500).send('Internal Server Error');
+    console.error("Error:", err);
+    res.status(500).send("Internal Server Error");
   } finally {
-      await client.close(); 
+    await client.close();
   }
 });
 
-app.post("/submit_form", upload.fields([{ name: 'uploadPhoto', maxCount: 1 }, { name: 'uploadCV', maxCount: 1 }]), async (req, res) => {
-  try {
+app.post(
+  "/submit_form",
+  upload.fields([
+    { name: "uploadPhoto", maxCount: 1 },
+    { name: "uploadCV", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
       const formData = req.body;
       const files = req.files;
       let imageUrl, cvUrl;
 
       if (!files.uploadPhoto || !files.uploadCV) {
-          // return res.status(400).send('Both photo and CV files need to be uploaded.');
+        // return res.status(400).send('Both photo and CV files need to be uploaded.');
       }
 
       // Construct file base name using firstName and lastName
-      const baseName = `${formData.firstName}_${formData.lastName}`.replace(/ /g, '_');
+      const baseName = `${formData.firstName}_${formData.lastName}`.replace(
+        / /g,
+        "_"
+      );
 
       // Upload photo to Cloudinary
       if (files.uploadPhoto) {
-          const photo = files.uploadPhoto[0];
-          const cloudinaryUploadPhotoResult = await cloudinary.uploader.upload(
-              photo.path,
-              { public_id: `photo_${baseName}` }
-          );
-          imageUrl = cloudinaryUploadPhotoResult.url;
+        const photo = files.uploadPhoto[0];
+        const cloudinaryUploadPhotoResult = await cloudinary.uploader.upload(
+          photo.path,
+          { public_id: `photo_${baseName}` }
+        );
+        imageUrl = cloudinaryUploadPhotoResult.url;
       }
 
       // Upload CV to Cloudinary
       if (files.uploadCV) {
-          const cv = files.uploadCV[0];
-          const cloudinaryUploadCVResult = await cloudinary.uploader.upload(
-              cv.path,
-              { resource_type: 'raw', public_id: `cv_${baseName}` }
-          );
-          cvUrl = cloudinaryUploadCVResult.url;
+        const cv = files.uploadCV[0];
+        const cloudinaryUploadCVResult = await cloudinary.uploader.upload(
+          cv.path,
+          { resource_type: "raw", public_id: `cv_${baseName}` }
+        );
+        cvUrl = cloudinaryUploadCVResult.url;
       }
 
       const client = new MongoClient(mongoURI, {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
       });
 
       await client.connect();
@@ -780,25 +804,279 @@ app.post("/submit_form", upload.fields([{ name: 'uploadPhoto', maxCount: 1 }, { 
 
       // Prepare data to be saved
       const dataToSave = {
-          date: new Date(),
-          ...formData,
-          uploadPhoto: imageUrl,
-          uploadCV: cvUrl,
-          remarks: ""
+        date: new Date(),
+        ...formData,
+        uploadPhoto: imageUrl,
+        uploadCV: cvUrl,
+        remarks: "",
       };
 
       await collection.insertOne(dataToSave);
-      res.status(200).send('OK');
-  } catch (err) {
+      res.status(200).send("OK");
+    } catch (err) {
       console.error("Error:", err);
       res.status(500).send("Internal Server Error");
+    }
+  }
+);
+
+// ------------------------------- marketing leads ----------------------------------------------------------
+
+// Nodemailer configuration for sending email using your custom email
+const transporter = nodemailer.createTransport({
+  // service: 'gmail',
+  // port: 465,
+  // auth: {
+  //   user: "shra1.jbs@gmail.com",
+  //   pass: "Shrawan@jbs77"
+  // }
+
+  host: "smtp.ethereal.email",
+  auth: {
+    user: "johnny.gleichner15@ethereal.email",
+    pass: "DcT9EBjEDFEvP8k8tF",
+  },
+});
+
+// Route for popup signup and sending email
+app.post("/popup", async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    await client.connect();
+
+    const db = client.db("formsData");
+    const marketingCollection = db.collection("PopupLeads");
+
+    // Function to format date
+    const formatDate = (date) => {
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+        .format(date)
+        .replace(",", "")
+        .replace(":", ".");
+    };
+
+    // Check if the email already exists
+    let existingUser = await marketingCollection.findOne({ email });
+
+    let userId;
+    if (existingUser) {
+      console.log("User already existed");
+      // If email exists, use the existing user ID
+      userId = existingUser.userId;
+    } else {
+      // If email is new, create a unique user ID and store it
+      userId = uuidv4();
+      await marketingCollection.insertOne({
+        email,
+        userId,
+        category: "marketing",
+        createdAt: formatDate(new Date()),
+      });
+    }
+
+    // Now send the automated email
+    const mailOptions = {
+      from: "shra1.jbs@gmail.com",
+      to: email,
+      subject: "Welcome to Qurocity!",
+      html: `
+    <div style="font-family: 'Raleway', Arial, sans-serif; color: #00046C; padding: 20px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; max-width: 600px; margin: auto;">
+      <h1 style="color: #00046C; text-align: center;">Welcome To Qurocity.ai</h1>
+      <p style="font-size: 16px; line-height: 1.6; text-align: center;">
+        With Us, No language is hard to learn. With the best tutors and loads of language resources, language learning becomes a piece of cake!
+      </p>
+      <h2 style="color: #00046C; font-size: 20px; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; text-align: center;">What Are The Language Learning Services That We Offer</h2>
+      
+      <div style="display: flex; justify-content: space-between; margin: 20px 0;">
+        <div style="width: 45%; text-align: center;">
+          <h3 style="color: #00046C; font-size: 18px;">Learn Any Language</h3>
+          <p style="font-size: 14px;">At ₹1499 with the best resources available. Apply Coupon code and get a discount!</p>
+          <div style="text-align: center; margin-top: 10px;">
+            <a href="https://play.google.com/store/apps/details?id=stage.curiotory.com&pcampaignid=web_share" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #4CAF50; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+              Download Our App
+            </a>
+          </div>
+        </div>
+
+        <div style="width: 45%; text-align: center;">
+          <h3 style="color: #00046C; font-size: 18px;">Confused about which language to learn?</h3>
+          <p style="font-size: 14px;">Don’t Worry, get your personalized language session here for absolutely free. Get all the career guidance you need.</p>
+          <div style="text-align: center; margin-top: 10px;">
+            <a href="http://localhost:5173/inquiry?userId=${userId}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #FFA726; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+              Fill Out Your Inquiry
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p style="font-size: 14px; color: #999; text-align: center; margin-top: 30px;">
+        Happy Learning!<br>
+        Team Qurocity.ai
+      </p>
+
+      <p style="font-size: 12px; color: #999; text-align: center; border-top: 1px solid #ddd; padding-top: 10px; margin-top: 20px;">
+        <a href="#" target="_blank" rel="noopener noreferrer" style="color: #999; text-decoration: none;">Unsubscribe</a>
+      </p>
+    </div>
+  `,
+    };
+
+    // Send email
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Error sending email:", error);
+        return res.status(500).json({ message: "Error sending email" });
+      }
+      console.log("Email sent: " + info.response);
+      return res.status(200).json({ userId });
+    });
+
+    await client.close();
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
+// follow up email after submitting the inquiry form
+async function sendFollowUpEmail(formData) {
+  const { name, email, phone, languages, message } = formData;
 
+  const mailOptions = {
+    from: "johnny.gleichner15@ethereal.email",
+    to: "shra1.jbs@gmail.com",
+    subject: "Inquiry Collected",
+    text: `A new inquiry has been collected with the following details:
 
+    Name: ${name}
+    Email: ${email}
+    Phone: ${phone}
+    Languages: ${languages.join(", ")}
+    Message: ${message}
+    `,
+  };
 
-// ------------------------------- marketing leads ----------------------------------------------------------
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("Follow-up email sent successfully");
+  } catch (error) {
+    console.error("Error sending follow-up email:", error);
+  }
+}
+
+// // inquiry form (redirected from an automated email)
+app.post("/inquiry", async (req, res) => {
+  try {
+    const { name, email, phone, languages, message, userId } = req.body;
+
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    await client.connect();
+    const db = client.db("formsData");
+    const marketingCollection = db.collection("MarketingLeads");
+
+    // Function to format date
+    const formatDate = (date) => {
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+        .format(date)
+        .replace(",", "")
+        .replace(":", ".");
+    };
+
+    let operationResult;
+
+    if (!userId) {
+      // Case 1: No userId in the URL, treat as a new entry
+      const newEntry = {
+        name,
+        email,
+        phone,
+        languages,
+        message,
+        category: "popup-inquiry",
+        createdAt: formatDate(new Date()),
+      };
+
+      operationResult = await marketingCollection.insertOne(newEntry);
+    } else {
+      // Case 2: userId exists, find the existing entry
+      const existingEntry = await marketingCollection.findOne({
+        userId: userId,
+      });
+
+      if (existingEntry) {
+        const updateData = {
+          name,
+          phone,
+          languages,
+          message,
+          updatedAt: formatDate(new Date()),
+        };
+
+        // Check if the emails are different
+        if (existingEntry.email && existingEntry.email !== email) {
+          updateData.popupEmail = existingEntry.email; // Preserve the original email as popupEmail
+          updateData.inquiryEmail = email; // Store the new inquiry email
+        } else {
+          updateData.email = email; // If emails match, just update
+        }
+
+        await marketingCollection.updateOne(
+          { userId: userId },
+          { $set: updateData }
+        );
+      } else {
+        const newEntryWithUserId = {
+          userId,
+          name,
+          email,
+          phone,
+          languages,
+          message,
+          category: "popup-inquiry",
+          createdAt: formatDate(new Date()),
+        };
+
+        operationResult = await marketingCollection.insertOne(
+          newEntryWithUserId
+        );
+      }
+    }
+
+    // Send follow-up email after successful database operation
+    await sendFollowUpEmail({ name, email, phone, languages, message });
+
+    res.status(200).json({
+      message: "Form Submitted Successfully",
+      entryId: operationResult?.insertedId,
+    });
+  } catch (error) {
+    console.error("Error processing inquiry:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
 
 // Counseling form submission -> present on the website
 app.post("/counseling", async (req, res) => {
@@ -823,11 +1101,16 @@ app.post("/counseling", async (req, res) => {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-      }).format(date).replace(",", "").replace(":", ".");
+      })
+        .format(date)
+        .replace(",", "")
+        .replace(":", ".");
     };
 
     // Check if an entry already exists for this email
-    const existingUser = await marketingCollection.findOne({ email: formData.email });
+    const existingUser = await marketingCollection.findOne({
+      email: formData.email,
+    });
 
     if (existingUser) {
       // Scenario 1: Same Email Used
@@ -843,7 +1126,7 @@ app.post("/counseling", async (req, res) => {
           },
         }
       );
-      res.status(200).json({ message: "Enquiry Submitted!" });
+      res.status(200).json({ message: "Form Submitted!" });
     } else {
       // Scenario 2: Different Email Used or new entry
       await marketingCollection.insertOne({
@@ -851,7 +1134,7 @@ app.post("/counseling", async (req, res) => {
         category: "counseling",
         createdAt: formatDate(new Date()), // Format createdAt
       });
-      res.status(200).json({ message: "Enquiry Submitted!" });
+      res.status(200).json({ message: "Form Submitted!" });
     }
 
     await client.close();
@@ -860,9 +1143,6 @@ app.post("/counseling", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
-
-
 
 // ------------------------------- website's forms ----------------------------------------------------------
 // account-deletion
@@ -880,7 +1160,9 @@ app.post("/account", async (req, res) => {
     const collection1 = db.collection("accountDeletionRequests");
 
     await collection1.insertOne(formData);
-    res.status(200).json({ message: "Account deletion request submitted successfully!" });
+    res
+      .status(200)
+      .json({ message: "Account deletion request submitted successfully!" });
 
     await client.close();
   } catch (err) {
@@ -913,7 +1195,7 @@ app.post("/sendMsg", async (req, res) => {
   }
 });
 
-// enrolling 
+// enrolling
 app.post("/enroll", async (req, res) => {
   const formData = req.body;
 
@@ -935,7 +1217,6 @@ app.post("/enroll", async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
-
 
 // guideform
 app.post("/guideForm", async (req, res) => {
@@ -960,5 +1241,3 @@ app.post("/guideForm", async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
-
-
