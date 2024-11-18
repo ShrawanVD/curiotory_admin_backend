@@ -175,32 +175,32 @@ app.get(
 );
 
 // redirecting to 301 error for urls having multiple id's in url -> seo issue
-app.get("/blogs/:slug", async (req, res) => {
-  const slug = req.params.slug;
+// app.get("/blogs/:slug", async (req, res) => {
+//   const slug = req.params.slug;
 
-  // Check if the slug contains duplicate segments (e.g., '-<id>-<id>')
-  const slugParts = slug.split('-');
-  const lastPart = slugParts[slugParts.length - 1];
+//   // Check if the slug contains duplicate segments (e.g., '-<id>-<id>')
+//   const slugParts = slug.split('-');
+//   const lastPart = slugParts[slugParts.length - 1];
 
-  if (slugParts[slugParts.length - 2] === lastPart) {
-    // Redirect to the correct URL without the duplicate part
-    const correctSlug = slugParts.slice(0, slugParts.length - 1).join('-');
-    // Set the old URL (with duplicate IDs) to return a 404 Not Found
-    return res.status(404).send("Blog not found at this URL. Redirecting...");
-  }
+//   if (slugParts[slugParts.length - 2] === lastPart) {
+//     // Redirect to the correct URL without the duplicate part
+//     const correctSlug = slugParts.slice(0, slugParts.length - 1).join('-');
+//     // Set the old URL (with duplicate IDs) to return a 404 Not Found
+//     return res.status(404).send("Blog not found at this URL. Redirecting...");
+//   }
 
-  // Proceed to fetch and display the blog using the clean slug
-  try {
-    const blog = await collection.findOne({ urlTitle: slug });
-    if (!blog) {
-      return res.status(404).send("Blog not found");
-    }
-    res.json(blog);
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).send("Internal Server Error");
-  }
-});
+//   // Proceed to fetch and display the blog using the clean slug
+//   try {
+//     const blog = await collection.findOne({ urlTitle: slug });
+//     if (!blog) {
+//       return res.status(404).send("Blog not found");
+//     }
+//     res.json(blog);
+//   } catch (err) {
+//     console.error("Error:", err);
+//     res.status(500).send("Internal Server Error");
+//   }
+// });
 
 
 
@@ -1145,6 +1145,7 @@ app.post("/counseling", async (req, res) => {
 });
 
 // ------------------------------- website's forms ----------------------------------------------------------
+
 // account-deletion
 app.post("/account", async (req, res) => {
   const formData = req.body;
