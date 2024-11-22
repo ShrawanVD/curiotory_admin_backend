@@ -12,6 +12,7 @@ const Schema = mongoose.Schema;
 const secretKey = "secretKey";
 const bcrypt = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
+const excelJS = require('exceljs');
 
 const nodemailer = require("nodemailer");
 
@@ -824,19 +825,79 @@ app.post(
 
 // Nodemailer configuration for sending email using your custom email
 const transporter = nodemailer.createTransport({
-  // service: 'gmail',
-  // port: 465,
-  // auth: {
-  //   user: "shra1.jbs@gmail.com",
-  //   pass: "Shrawan@jbs77"
-  // }
 
-  host: "smtp.ethereal.email",
+  // qurocity account
+  // host: "smtp.gmail.com",
+  service: "gmail",
+  secure: true,
+  port: 465,
   auth: {
-    user: "johnny.gleichner15@ethereal.email",
-    pass: "DcT9EBjEDFEvP8k8tF",
-  },
+    user: "qurocityai@gmail.com",
+    pass: "nxggfjxoopmqkoqh"
+    // pass: "nxgg fjxo opmq koqh"
+  }
+
+  // host: "smtp.ethereal.email",
+  // auth: {
+  //   user: "johnny.gleichner15@ethereal.email",
+  //   pass: "DcT9EBjEDFEvP8k8tF",
+  // },
 });
+
+// for verifying if transporter has access to our gmail
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("SMTP connection error:", error);
+  } else {
+    console.log("Server is ready to take our messages:", success);
+  }
+});
+
+// follow up email after submitting the inquiry and counselling form
+async function sendFollowUpEmail(formData) {
+  const { name, email, contactNumber, language, message, category } = formData;
+
+  // Default message if not provided
+  const formattedMessage = message || "Connection Request";
+
+  // Check if languages is an array, else provide a fallback
+  const formattedLanguages = Array.isArray(language) && language.length > 0
+    ? language.join(", ")
+    : "No languages specified"; // Fallback if languages are undefined or empty
+
+  // Construct the email options
+  const mailOptions = {
+    from: "qurocityai@gmail.com",
+    // cc: "shra1.deo7714@gmail.com",
+    to: "partner@qurocity.ai",
+    subject: "Inquiry Collected",
+    text: `A new inquiry has been collected with the following details:
+
+    Name: ${name}
+    Email: ${email}
+    Phone: ${contactNumber || "Not provided"}
+    Languages: ${formattedLanguages}
+    Message: ${formattedMessage}
+    Category: ${category}
+    `,
+  };
+
+  try {
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log("Error sending email: ", error.response);
+        return res.status(500).json({ message: "Error sending email", error: error.response });
+      } else {
+        console.log("Email sent: " + info.response);
+        return res.status(200).json({});
+      }
+    });
+
+    console.log("Follow-up email sent successfully");
+  } catch (error) {
+    console.error("Error sending follow-up email:", error);
+  }
+}
 
 // Route for popup signup and sending email
 app.post("/popup", async (req, res) => {
@@ -949,32 +1010,6 @@ app.post("/popup", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
-// follow up email after submitting the inquiry form
-async function sendFollowUpEmail(formData) {
-  const { name, email, phone, languages, message } = formData;
-
-  const mailOptions = {
-    from: "johnny.gleichner15@ethereal.email",
-    to: "shra1.jbs@gmail.com",
-    subject: "Inquiry Collected",
-    text: `A new inquiry has been collected with the following details:
-
-    Name: ${name}
-    Email: ${email}
-    Phone: ${phone}
-    Languages: ${languages.join(", ")}
-    Message: ${message}
-    `,
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log("Follow-up email sent successfully");
-  } catch (error) {
-    console.error("Error sending follow-up email:", error);
-  }
-}
 
 // // inquiry form (redirected from an automated email)
 app.post("/inquiry", async (req, res) => {
@@ -1126,6 +1161,10 @@ app.post("/counseling", async (req, res) => {
           },
         }
       );
+
+      // Send follow-up email after successful database operation
+      await sendFollowUpEmail(formData);
+
       res.status(200).json({ message: "Form Submitted!" });
     } else {
       // Scenario 2: Different Email Used or new entry
@@ -1134,6 +1173,10 @@ app.post("/counseling", async (req, res) => {
         category: "counseling",
         createdAt: formatDate(new Date()), // Format createdAt
       });
+
+      // Send follow-up email after successful database operation
+      await sendFollowUpEmail(formData);
+
       res.status(200).json({ message: "Form Submitted!" });
     }
 
@@ -1141,6 +1184,56 @@ app.post("/counseling", async (req, res) => {
   } catch (err) {
     console.error("Error:", err);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+// downloading the leads
+app.get('/download-leads', async (req, res) => {
+  try {
+    const client = new MongoClient(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    await client.connect();
+
+    const db = client.db("formsData");
+    const marketingCollection = db.collection("MarketingLeads");
+
+    const leads = await marketingCollection.find({}).toArray();
+
+    // Create a new Excel workbook
+    const workbook = new excelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Marketing Leads');
+
+    // Define columns
+    worksheet.columns = [
+      { header: 'Name', key: 'name', width: 25 },
+      { header: 'Email', key: 'email', width: 25 },
+      { header: 'Phone', key: 'contactNumber', width: 20 },
+      { header: 'Languages', key: 'language', width: 30 },
+      { header: 'Category', key: 'category', width: 20 },
+      { header: 'Created At', key: 'createdAt', width: 20 }
+    ];
+
+    // Add rows
+    leads.forEach((lead) => {
+      worksheet.addRow(lead);
+    });
+
+    // Set response headers for download
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=leads.xlsx');
+
+    // Send the Excel file
+    await workbook.xlsx.write(res);
+    res.status(200).end();
+    await client.close();
+  } catch (err) {
+    console.error('Error generating Excel file', err);
+    res.status(500).send('Error generating Excel file');
   }
 });
 
