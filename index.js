@@ -12,7 +12,7 @@ const Schema = mongoose.Schema;
 const secretKey = "secretKey";
 const bcrypt = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
-const excelJS = require('exceljs');
+const excelJS = require("exceljs");
 
 const nodemailer = require("nodemailer");
 
@@ -202,8 +202,6 @@ app.get(
 //     res.status(500).send("Internal Server Error");
 //   }
 // });
-
-
 
 // getting current date
 function getCurrentDate() {
@@ -825,7 +823,6 @@ app.post(
 
 // Nodemailer configuration for sending email using your custom email
 const transporter = nodemailer.createTransport({
-
   // qurocity account
   // host: "smtp.gmail.com",
   service: "gmail",
@@ -833,9 +830,9 @@ const transporter = nodemailer.createTransport({
   port: 465,
   auth: {
     user: "qurocityai@gmail.com",
-    pass: "nxggfjxoopmqkoqh"
+    pass: "nxggfjxoopmqkoqh",
     // pass: "nxgg fjxo opmq koqh"
-  }
+  },
 
   // host: "smtp.ethereal.email",
   // auth: {
@@ -861,14 +858,14 @@ async function sendFollowUpEmail(formData) {
   const formattedMessage = message || "Connection Request";
 
   // Check if languages is an array, else provide a fallback
-  const formattedLanguages = Array.isArray(language) && language.length > 0
-    ? language.join(", ")
-    : "No languages specified"; // Fallback if languages are undefined or empty
+  const formattedLanguages =
+    Array.isArray(language) && language.length > 0
+      ? language.join(", ")
+      : "No languages specified"; // Fallback if languages are undefined or empty
 
   // Construct the email options
   const mailOptions = {
     from: "qurocityai@gmail.com",
-    // cc: "shra1.deo7714@gmail.com",
     to: "partner@qurocity.ai",
     subject: "Inquiry Collected",
     text: `A new inquiry has been collected with the following details:
@@ -886,7 +883,9 @@ async function sendFollowUpEmail(formData) {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.log("Error sending email: ", error.response);
-        return res.status(500).json({ message: "Error sending email", error: error.response });
+        return res
+          .status(500)
+          .json({ message: "Error sending email", error: error.response });
       } else {
         console.log("Email sent: " + info.response);
         return res.status(200).json({});
@@ -912,6 +911,7 @@ app.post("/popup", async (req, res) => {
 
     const db = client.db("formsData");
     const marketingCollection = db.collection("PopupLeads");
+
 
     // Function to format date
     const formatDate = (date) => {
@@ -949,8 +949,9 @@ app.post("/popup", async (req, res) => {
 
     // Now send the automated email
     const mailOptions = {
-      from: "shra1.jbs@gmail.com",
+      from: "qurocityai@gmail.com",
       to: email,
+      bcc: "partner@qurocity.ai",
       subject: "Welcome to Qurocity!",
       html: `
     <div style="font-family: 'Raleway', Arial, sans-serif; color: #00046C; padding: 20px; background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; max-width: 600px; margin: auto;">
@@ -960,7 +961,7 @@ app.post("/popup", async (req, res) => {
       </p>
       <h2 style="color: #00046C; font-size: 20px; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; text-align: center;">What Are The Language Learning Services That We Offer</h2>
       
-      <div style="display: flex; justify-content: space-between; margin: 20px 0;">
+      <div style="display: flex; justify-content: space-between; margin: 20px 0; flex-wrap: wrap">
         <div style="width: 45%; text-align: center;">
           <h3 style="color: #00046C; font-size: 18px;">Learn Any Language</h3>
           <p style="font-size: 14px;">At ₹1499 with the best resources available. Apply Coupon code and get a discount!</p>
@@ -975,7 +976,7 @@ app.post("/popup", async (req, res) => {
           <h3 style="color: #00046C; font-size: 18px;">Confused about which language to learn?</h3>
           <p style="font-size: 14px;">Don’t Worry, get your personalized language session here for absolutely free. Get all the career guidance you need.</p>
           <div style="text-align: center; margin-top: 10px;">
-            <a href="http://localhost:5173/inquiry?userId=${userId}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #FFA726; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            <a href="https://qurocity.ai/inquiry?userId=${userId}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #FFA726; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
               Fill Out Your Inquiry
             </a>
           </div>
@@ -989,10 +990,13 @@ app.post("/popup", async (req, res) => {
 
       <p style="font-size: 12px; color: #999; text-align: center; border-top: 1px solid #ddd; padding-top: 10px; margin-top: 20px;">
         <a href="#" target="_blank" rel="noopener noreferrer" style="color: #999; text-decoration: none;">Unsubscribe</a>
+
+
       </p>
     </div>
   `,
     };
+
 
     // Send email
     transporter.sendMail(mailOptions, (error, info) => {
@@ -1101,7 +1105,16 @@ app.post("/inquiry", async (req, res) => {
     }
 
     // Send follow-up email after successful database operation
-    await sendFollowUpEmail({ name, email, phone, languages, message });
+    const formData = {
+      name,
+      email,
+      contactNumber: phone, // Rename 'phone' to 'contactNumber' for email function
+      language: languages, // Rename 'languages' to 'language' for email function
+      message,
+      category: "inquiry", // Add category to track the type of form
+    };
+
+    await sendFollowUpEmail(formData); // Pass formData to the email function
 
     res.status(200).json({
       message: "Form Submitted Successfully",
@@ -1188,7 +1201,7 @@ app.post("/counseling", async (req, res) => {
 });
 
 // downloading the leads
-app.get('/download-leads', async (req, res) => {
+app.get("/download-leads", async (req, res) => {
   try {
     const client = new MongoClient(mongoURI, {
       useNewUrlParser: true,
@@ -1203,16 +1216,16 @@ app.get('/download-leads', async (req, res) => {
 
     // Create a new Excel workbook
     const workbook = new excelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Marketing Leads');
+    const worksheet = workbook.addWorksheet("Marketing Leads");
 
     // Define columns
     worksheet.columns = [
-      { header: 'Name', key: 'name', width: 25 },
-      { header: 'Email', key: 'email', width: 25 },
-      { header: 'Phone', key: 'contactNumber', width: 20 },
-      { header: 'Languages', key: 'language', width: 30 },
-      { header: 'Category', key: 'category', width: 20 },
-      { header: 'Created At', key: 'createdAt', width: 20 }
+      { header: "Name", key: "name", width: 25 },
+      { header: "Email", key: "email", width: 25 },
+      { header: "Phone", key: "contactNumber", width: 20 },
+      { header: "Languages", key: "language", width: 30 },
+      { header: "Category", key: "category", width: 20 },
+      { header: "Created At", key: "createdAt", width: 20 },
     ];
 
     // Add rows
@@ -1222,18 +1235,18 @@ app.get('/download-leads', async (req, res) => {
 
     // Set response headers for download
     res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
-    res.setHeader('Content-Disposition', 'attachment; filename=leads.xlsx');
+    res.setHeader("Content-Disposition", "attachment; filename=leads.xlsx");
 
     // Send the Excel file
     await workbook.xlsx.write(res);
     res.status(200).end();
     await client.close();
   } catch (err) {
-    console.error('Error generating Excel file', err);
-    res.status(500).send('Error generating Excel file');
+    console.error("Error generating Excel file", err);
+    res.status(500).send("Error generating Excel file");
   }
 });
 
